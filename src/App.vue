@@ -6,3 +6,13 @@ import Editable from './components/Editable.vue'
 	<Editable/>
 </template>
 
+<style>
+* {
+	margin: 0;
+	padding: 0;
+
+	background-color: #18181b;
+	color: white;
+}
+</style>
+
