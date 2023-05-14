@@ -92,7 +92,7 @@ function setCursor(
 		startNode = editor.childNodes[startNodePosition]
 		endNode = editor.childNodes[endNodePosition]
 	} else {
-		if (editor.childNodes.length === 0) return
+		if (editor.childNodes.length === 0 || editor.childNodes[0].textContent === '') return
 
 		startNode = editor.childNodes[startNodePosition].childNodes[0]
 		endNode = editor.childNodes[endNodePosition].childNodes[0]
