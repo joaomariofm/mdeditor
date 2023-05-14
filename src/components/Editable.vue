@@ -8,6 +8,10 @@ import { ref, nextTick } from 'vue'
 const content = ref('')
 const editable = ref<HTMLElement | null>(null)
 
+interface ParentNodeWithId extends ParentNode {
+	id: string;
+}
+
 function remapContent(event: Event) {
 	const { start, end, startNodePosition, endNodePosition, startNodeParent } =  getCursorPosition()
 
@@ -29,25 +33,33 @@ function parseContent(content: string): string {
 function getCursorPosition() {
 	const selection = window.getSelection()
 	const range = selection?.getRangeAt(0)
-	const start = range?.startOffset
-	const end = range?.endOffset
-	const startNodeParent = range?.startContainer?.parentNode
+	const start = range?.startOffset ? range?.startOffset : 0
+	const end = range?.endOffset ? range?.endOffset : 0
+	const startNodeParent = range?.startContainer?.parentNode as ParentNodeWithId
 	let startNodePosition = 0
 	let endNodePosition = 0
 
 	if (startNodeParent?.id === 'editable') {
 		startNodePosition = range?.startContainer?.parentNode?.childNodes
-			? Array.from(range?.startContainer?.parentNode?.childNodes).indexOf(range?.startContainer)
+			? Array.from(range?.startContainer?.parentNode?.childNodes as NodeListOf<Node>).indexOf(range?.startContainer)
 			: 0
 		endNodePosition = range?.endContainer?.parentNode?.childNodes
-			? Array.from(range?.endContainer?.parentNode?.childNodes).indexOf(range?.endContainer)
+			? Array.from(range?.endContainer?.parentNode?.childNodes as NodeListOf<Node>).indexOf(range?.endContainer)
 			: 0 
 	} else {
 		startNodePosition = range?.startContainer?.parentNode?.parentNode?.childNodes
-			? Array.from(range?.startContainer?.parentNode?.parentNode?.childNodes).indexOf(range?.startContainer?.parentNode)
+			? Array.from(
+					range?.startContainer?.parentNode?.parentNode?.childNodes as NodeListOf<Node>
+				).indexOf(
+					range?.startContainer?.parentNode
+				)
 			: 0
 		endNodePosition = range?.endContainer?.parentNode?.parentNode?.childNodes
-			? Array.from(range?.endContainer?.parentNode?.parentNode?.childNodes).indexOf(range?.endContainer?.parentNode)
+			? Array.from(
+					range?.endContainer?.parentNode?.parentNode?.childNodes as NodeListOf<Node>
+				).indexOf(
+					range?.endContainer?.parentNode
+				)
 			: 0
 	}
 
@@ -60,7 +72,13 @@ function getCursorPosition() {
 	}
 }
 
-function setCursor(start: number, end: number, startNodePosition: number, endNodePosition: number, startNodeParent: Node | null) {
+function setCursor(
+		start: number,
+		end: number,
+		startNodePosition: number,
+		endNodePosition: number,
+		startNodeParent: ParentNodeWithId | null | undefined
+	) {
 	const editor = editable.value
 
 	if (!editor) return
