@@ -1,5 +1,13 @@
 <template>
-	<div id="editable" ref="editable" contenteditable="true" spellcheck="false" @keyup="remapContent" v-html="content"></div>
+	<div
+		id="editable"
+		ref="editable"
+		@keyup="remapContent"
+		v-html="content"
+		contenteditable="true"
+		spellcheck="false"
+		placeholder="Start typing..."
+	></div>
 </template>
 
 <script setup lang="ts">
@@ -108,9 +116,20 @@ function setCursor(
 
 <style>
 #editable {
+	font-family: 'Roboto', sans-serif;
+	color: #f8fafc;
+
 	min-height: 100vh;
 
 	box-sizing: border-box;
 	padding: 1rem 1rem 0 1rem;
+}
+
+[contenteditable=true]:empty:before{
+  content: attr(placeholder);
+	color: #3f3f46;
+	font-weight: bold;
+  pointer-events: none;
+  display: block; /* For Firefox */
 }
 </style>
