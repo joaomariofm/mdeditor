@@ -1,11 +1,11 @@
 <template>
-	<div id="editable" ref="editable" contenteditable="true" @keyup="remapContent" v-html="content"></div>
+	<div id="editable" ref="editable" contenteditable="true" spellcheck="false" @keyup="remapContent" v-html="content"></div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 
-const content = ref('testing my app')
+const content = ref('')
 const editable = ref<HTMLElement | null>(null)
 
 function remapContent(event: Event) {
@@ -34,7 +34,6 @@ function getCursorPosition() {
 	const startNodeParent = range?.startContainer?.parentNode
 	let startNodePosition = 0
 	let endNodePosition = 0
-
 
 	if (startNodeParent?.id === 'editable') {
 		startNodePosition = range?.startContainer?.parentNode?.childNodes
@@ -75,6 +74,8 @@ function setCursor(start: number, end: number, startNodePosition: number, endNod
 		startNode = editor.childNodes[startNodePosition]
 		endNode = editor.childNodes[endNodePosition]
 	} else {
+		if (editor.childNodes.length === 0) return
+
 		startNode = editor.childNodes[startNodePosition].childNodes[0]
 		endNode = editor.childNodes[endNodePosition].childNodes[0]
 	}
