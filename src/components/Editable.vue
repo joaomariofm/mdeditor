@@ -21,14 +21,14 @@ interface ParentNodeWithId extends ParentNode {
 }
 
 function remapContent(event: Event) {
-	const { start, end, startNodePosition, endNodePosition, startNodeParent } =  getCursorPosition()
+	const { start, end, startNodePosition, endNodePosition, startNodeParent, cursorNodePath } =  getCursorPosition()
 
 	const target = event.target as HTMLElement
   const parsedContent = parseContent(target.innerHTML)
   content.value = parsedContent
 
 	nextTick(() => {
-		setCursor(start, end, startNodePosition, endNodePosition, startNodeParent)
+		setCursor(start, end, startNodePosition, endNodePosition, startNodeParent, cursorNodePath)
 	})
 }
 
@@ -40,7 +40,7 @@ function parseContent(content: string): string {
 
 function getCursorPosition() {
 	const selection = window.getSelection()
-	const range = selection?.getRangeAt(0)
+		const range = selection?.getRangeAt(0)
 	const start = range?.startOffset ? range?.startOffset : 0
 	const end = range?.endOffset ? range?.endOffset : 0
 	const startNodeParent = range?.startContainer?.parentNode as ParentNodeWithId
@@ -71,12 +71,27 @@ function getCursorPosition() {
 			: 0
 	}
 
+	const cursorNodePath = []
+	
+	let node = range?.startContainer as ParentNodeWithId | null | undefined
+	let parent = range?.startContainer?.parentNode as ParentNodeWithId | null | undefined
+
+	while(true) {
+		if (parent?.id === 'app') break
+		cursorNodePath.unshift(Array.from(parent?.childNodes as NodeListOf<Node>).indexOf(node as Node))
+
+		if (parent?.id === 'editable') break
+		node = parent
+		parent = parent?.parentNode as ParentNodeWithId | null | undefined
+	}
+
 	return {
 		start,
 		end,
 		startNodePosition,
 		endNodePosition,
-		startNodeParent
+		startNodeParent,
+		cursorNodePath,
 	}
 }
 
@@ -85,7 +100,8 @@ function setCursor(
 		end: number,
 		startNodePosition: number,
 		endNodePosition: number,
-		startNodeParent: ParentNodeWithId | null | undefined
+		startNodeParent: ParentNodeWithId | null | undefined,
+		cursorNodePath: number[]
 	) {
 	const editor = editable.value
 
@@ -95,6 +111,8 @@ function setCursor(
 	const selection = window.getSelection()
 	let startNode = null
 	let endNode = null
+
+	console.log('cursorNodePath', cursorNodePath)
 
 	if (startNodeParent?.id === 'editable') {
 		startNode = editor.childNodes[startNodePosition]
