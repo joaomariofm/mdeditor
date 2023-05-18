@@ -21,14 +21,14 @@ interface ParentNodeWithId extends ParentNode {
 }
 
 function remapContent(event: Event) {
-	const { start, end, startNodePosition, endNodePosition, startNodeParent, cursorNodePath } =  getCursorPosition()
+	const { startCharacterIndex, endCharacterIndex, cursorStartNodePath, cursorEndNodePath } =  getCursorPosition()
 
 	const target = event.target as HTMLElement
   const parsedContent = parseContent(target.innerHTML)
   content.value = parsedContent
 
 	nextTick(() => {
-		setCursor(start, end, startNodePosition, endNodePosition, startNodeParent, cursorNodePath)
+		setCursor(startCharacterIndex, endCharacterIndex, cursorStartNodePath, cursorEndNodePath)
 	})
 }
 
@@ -40,68 +40,51 @@ function parseContent(content: string): string {
 
 function getCursorPosition() {
 	const selection = window.getSelection()
-		const range = selection?.getRangeAt(0)
-	const start = range?.startOffset ? range?.startOffset : 0
-	const end = range?.endOffset ? range?.endOffset : 0
-	const startNodeParent = range?.startContainer?.parentNode as ParentNodeWithId
-	let startNodePosition = 0
-	let endNodePosition = 0
+	const range = selection?.getRangeAt(0)
+	const startCharacterIndex = range?.startOffset ? range?.startOffset : 0
+	const endCharacterIndex = range?.endOffset ? range?.endOffset : 0
 
-	if (startNodeParent?.id === 'editable') {
-		startNodePosition = range?.startContainer?.parentNode?.childNodes
-			? Array.from(range?.startContainer?.parentNode?.childNodes as NodeListOf<Node>).indexOf(range?.startContainer)
-			: 0
-		endNodePosition = range?.endContainer?.parentNode?.childNodes
-			? Array.from(range?.endContainer?.parentNode?.childNodes as NodeListOf<Node>).indexOf(range?.endContainer)
-			: 0 
-	} else {
-		startNodePosition = range?.startContainer?.parentNode?.parentNode?.childNodes
-			? Array.from(
-					range?.startContainer?.parentNode?.parentNode?.childNodes as NodeListOf<Node>
-				).indexOf(
-					range?.startContainer?.parentNode
-				)
-			: 0
-		endNodePosition = range?.endContainer?.parentNode?.parentNode?.childNodes
-			? Array.from(
-					range?.endContainer?.parentNode?.parentNode?.childNodes as NodeListOf<Node>
-				).indexOf(
-					range?.endContainer?.parentNode
-				)
-			: 0
-	}
-
-	const cursorNodePath = []
+	const cursorStartNodePath = []
 	
-	let node = range?.startContainer as ParentNodeWithId | null | undefined
-	let parent = range?.startContainer?.parentNode as ParentNodeWithId | null | undefined
+	let startingNode = range?.startContainer as ParentNodeWithId | null | undefined
+	let startingNodeParent = range?.startContainer?.parentNode as ParentNodeWithId | null | undefined
 
 	while(true) {
-		if (parent?.id === 'app') break
-		cursorNodePath.unshift(Array.from(parent?.childNodes as NodeListOf<Node>).indexOf(node as Node))
+		if (startingNodeParent?.id === 'app') break
+		cursorStartNodePath.unshift(Array.from(startingNodeParent?.childNodes as NodeListOf<Node>).indexOf(startingNode as Node))
 
-		if (parent?.id === 'editable') break
-		node = parent
-		parent = parent?.parentNode as ParentNodeWithId | null | undefined
+		if (startingNodeParent?.id === 'editable') break
+		startingNode = startingNodeParent
+		startingNodeParent = startingNodeParent?.parentNode as ParentNodeWithId | null | undefined
+	}
+
+	const cursorEndNodePath = []
+
+	let endingNode = range?.endContainer as ParentNodeWithId | null | undefined
+	let endingNodeParent = range?.endContainer?.parentNode as ParentNodeWithId | null | undefined
+
+	while(true) {
+		if (endingNodeParent?.id === 'app') break
+		cursorEndNodePath.unshift(Array.from(endingNodeParent?.childNodes as NodeListOf<Node>).indexOf(endingNode as Node))
+
+		if (endingNodeParent?.id === 'editable') break
+		endingNode = endingNodeParent
+		endingNodeParent = endingNodeParent?.parentNode as ParentNodeWithId | null | undefined
 	}
 
 	return {
-		start,
-		end,
-		startNodePosition,
-		endNodePosition,
-		startNodeParent,
-		cursorNodePath,
+		startCharacterIndex,
+		endCharacterIndex,
+		cursorStartNodePath,
+		cursorEndNodePath,
 	}
 }
 
 function setCursor(
-		start: number,
-		end: number,
-		startNodePosition: number,
-		endNodePosition: number,
-		startNodeParent: ParentNodeWithId | null | undefined,
-		cursorNodePath: number[]
+		startCharacterIndex: number,
+		endCharacterIndex: number,
+		cursorStartNodePath: number[],
+		cursorEndNodePath: number[],
 	) {
 	const editor = editable.value
 
@@ -109,23 +92,31 @@ function setCursor(
 
 	const range = document.createRange()
 	const selection = window.getSelection()
-	let startNode = null
-	let endNode = null
 
-	console.log('cursorNodePath', cursorNodePath)
+	let testingStartNode: Node | null | undefined = null
 
-	if (startNodeParent?.id === 'editable') {
-		startNode = editor.childNodes[startNodePosition]
-		endNode = editor.childNodes[endNodePosition]
-	} else {
-		if (editor.childNodes.length === 0 || editor.childNodes[0].textContent === '') return
+	cursorStartNodePath.forEach((nodeIndex, index) => {
+		if (index === 0) {
+			testingStartNode = editor.childNodes[nodeIndex]
+			return
+		}
 
-		startNode = editor.childNodes[startNodePosition].childNodes[0]
-		endNode = editor.childNodes[endNodePosition].childNodes[0]
-	}
+		testingStartNode = testingStartNode?.childNodes[nodeIndex]
+	})
+
+	let testingEndNode: Node | null | undefined = null
+
+	cursorEndNodePath.forEach((nodeIndex, index) => {
+		if (index === 0) {
+			testingEndNode = editor.childNodes[nodeIndex]
+			return
+		}
+
+		testingEndNode = testingEndNode?.childNodes[nodeIndex]
+	})
 	
-	range.setStart(startNode, start)
-	range.setEnd(endNode, end)
+	range.setStart(testingStartNode, startCharacterIndex)
+	range.setEnd(testingEndNode, endCharacterIndex)
 
 	selection?.removeAllRanges()
 	selection?.addRange(range)
