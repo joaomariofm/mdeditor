@@ -21,20 +21,40 @@ interface ParentNodeWithId extends ParentNode {
 }
 
 function remapContent(event: Event) {
-	const { startCharacterIndex, endCharacterIndex, cursorStartNodePath, cursorEndNodePath } =  getCursorPosition()
-
 	const target = event.target as HTMLElement
-  const parsedContent = parseContent(target.innerHTML)
+	const { newContent, matches } = checkForMdSyntax(target.innerHTML)
+
+	const { startCharacterIndex, cursorStartNodePath } =  getCursorPosition()
+
+  const parsedContent = parseContent(newContent)
   content.value = parsedContent
 
 	nextTick(() => {
-		setCursor(startCharacterIndex, endCharacterIndex, cursorStartNodePath, cursorEndNodePath)
+		setCursor(startCharacterIndex, cursorStartNodePath, matches)
 	})
 }
 
-function parseContent(content: string): string {
+function checkForMdSyntax(newContent: string) {
+	// check for content between *...* and replace with <strong>...</strong>
+	const strongRegex = /\*(.*?)\*/g
+	const strongMatches = newContent.match(strongRegex)
+
+	if (strongMatches) {
+		strongMatches.forEach(match => {
+			const newMatch = match.replace(/\*/g, '')
+			newContent = newContent.replace(match, `<strong>${newMatch}</strong>`)
+		})
+	}
+
+	return { 
+		newContent,
+		matches: strongMatches ? true : false,
+	}
+}
+
+function parseContent(newContent: string): string {
   const parser = new DOMParser()
-  const parsedDocument = parser.parseFromString(content, 'text/html')
+  const parsedDocument = parser.parseFromString(newContent, 'text/html')
   return parsedDocument.body.innerHTML
 }
 
@@ -82,9 +102,8 @@ function getCursorPosition() {
 
 function setCursor(
 		startCharacterIndex: number,
-		endCharacterIndex: number,
 		cursorStartNodePath: number[],
-		cursorEndNodePath: number[],
+		matches: boolean
 	) {
 	const editor = editable.value
 
@@ -104,19 +123,18 @@ function setCursor(
 		testingStartNode = testingStartNode?.childNodes[nodeIndex]
 	})
 
-	let testingEndNode: Node | null | undefined = null
-
-	cursorEndNodePath.forEach((nodeIndex, index) => {
-		if (index === 0) {
-			testingEndNode = editor.childNodes[nodeIndex]
-			return
+	if (matches) {
+		if (testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1].nodeName === 'BR') {
+			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 2].childNodes[0]
+			startCharacterIndex -= testingStartNode?.parentNode?.parentNode?.childNodes[0].textContent?.length as number
+		} else {
+			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1].childNodes[0]
 		}
 
-		testingEndNode = testingEndNode?.childNodes[nodeIndex]
-	})
-	
+		startCharacterIndex -= 2
+	}
+
 	range.setStart(testingStartNode, startCharacterIndex)
-	range.setEnd(testingEndNode, endCharacterIndex)
 
 	selection?.removeAllRanges()
 	selection?.addRange(range)
