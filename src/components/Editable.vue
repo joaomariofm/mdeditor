@@ -35,8 +35,7 @@ function remapContent(event: Event) {
 }
 
 function checkForMdSyntax(newContent: string) {
-	// check for content between *...* and replace with <strong>...</strong>
-	const strongRegex = /\*(.*?)\*/g
+	const strongRegex = /\*{2}.*?\*{2}/g
 	const strongMatches = newContent.match(strongRegex)
 
 	if (strongMatches) {
