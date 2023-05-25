@@ -3,7 +3,9 @@ import Editable from './components/Editable.vue'
 </script>
 
 <template>
-	<Editable/>
+	<div class="container">
+		<Editable/>
+	</div>
 </template>
 
 <style>
@@ -13,6 +15,15 @@ import Editable from './components/Editable.vue'
 
 	background-color: #18181b;
 	color: white;
+}
+
+.container {
+	width: 100vw;
+	height: 100vh;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 </style>
 

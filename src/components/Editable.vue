@@ -125,13 +125,14 @@ function setCursor(
 
 	if (matches) {
 		if (testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1].nodeName === 'BR') {
-			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 2].childNodes[0]
-			startCharacterIndex -= testingStartNode?.parentNode?.parentNode?.childNodes[0].textContent?.length as number
+			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1]
 		} else {
-			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1].childNodes[0]
+			const br = document.createElement('br')
+			testingStartNode?.parentNode?.insertBefore(br, testingStartNode?.nextSibling)
+			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1]
 		}
 
-		startCharacterIndex -= 2
+		startCharacterIndex = 0
 	}
 
 	range.setStart(testingStartNode, startCharacterIndex)
@@ -147,10 +148,16 @@ function setCursor(
 	color: #f8fafc;
 
 	min-height: 100vh;
+	width: 50vw;
 
 	box-sizing: border-box;
-	padding: 1rem 1rem 0 1rem;
+	padding: 3rem 1rem 0 1rem;
 }
+
+#editable:focus {
+	outline: none;
+}
+	
 
 [contenteditable=true]:empty:before{
   content: attr(placeholder);
