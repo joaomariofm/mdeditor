@@ -21,23 +21,32 @@ interface ParentNodeWithId extends ParentNode {
 }
 
 function remapContent(event: Event) {
+	// getting the target element
 	const target = event.target as HTMLElement
+	
+	// checking for markdown syntax
 	const { newContent, matches } = checkForMdSyntax(target.innerHTML)
 
+	// getting the cursor position
 	const { startCharacterIndex, cursorStartNodePath } =  getCursorPosition()
+	
+	// setting the new content
+  content.value = parseContent(newContent)
 
-  const parsedContent = parseContent(newContent)
-  content.value = parsedContent
-
+	// setting the cursor position
 	nextTick(() => {
 		setCursor(startCharacterIndex, cursorStartNodePath, matches)
 	})
 }
 
-function checkForMdSyntax(newContent: string) {
+function checkForMdSyntax(content: string) {
+	// checking for bold syntax
 	const strongRegex = /\*{2}.*?\*{2}/g
-	const strongMatches = newContent.match(strongRegex)
+	const strongMatches = content.match(strongRegex)
 
+	let newContent = content
+
+	// replacing bold syntax matches with html tags
 	if (strongMatches) {
 		strongMatches.forEach(match => {
 			const newMatch = match.replace(/\*/g, '')
@@ -45,21 +54,20 @@ function checkForMdSyntax(newContent: string) {
 		})
 	}
 
-	return { 
-		newContent,
-		matches: strongMatches ? true : false,
-	}
+	return { newContent, matches: strongMatches ? true : false }
 }
 
 function parseContent(newContent: string): string {
   const parser = new DOMParser()
   const parsedDocument = parser.parseFromString(newContent, 'text/html')
+
   return parsedDocument.body.innerHTML
 }
 
 function getCursorPosition() {
 	const selection = window.getSelection()
 	const range = selection?.getRangeAt(0)
+
 	const startCharacterIndex = range?.startOffset ? range?.startOffset : 0
 	const endCharacterIndex = range?.endOffset ? range?.endOffset : 0
 
@@ -77,26 +85,7 @@ function getCursorPosition() {
 		startingNodeParent = startingNodeParent?.parentNode as ParentNodeWithId | null | undefined
 	}
 
-	const cursorEndNodePath = []
-
-	let endingNode = range?.endContainer as ParentNodeWithId | null | undefined
-	let endingNodeParent = range?.endContainer?.parentNode as ParentNodeWithId | null | undefined
-
-	while(true) {
-		if (endingNodeParent?.id === 'app') break
-		cursorEndNodePath.unshift(Array.from(endingNodeParent?.childNodes as NodeListOf<Node>).indexOf(endingNode as Node))
-
-		if (endingNodeParent?.id === 'editable') break
-		endingNode = endingNodeParent
-		endingNodeParent = endingNodeParent?.parentNode as ParentNodeWithId | null | undefined
-	}
-
-	return {
-		startCharacterIndex,
-		endCharacterIndex,
-		cursorStartNodePath,
-		cursorEndNodePath,
-	}
+	return { startCharacterIndex, endCharacterIndex, cursorStartNodePath }
 }
 
 function setCursor(
