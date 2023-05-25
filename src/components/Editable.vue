@@ -25,7 +25,7 @@ function remapContent(event: Event) {
 	const target = event.target as HTMLElement
 	
 	// checking for markdown syntax
-	const { newContent, matches } = checkForMdSyntax(target.innerHTML)
+	const { newContent, mdTagInserted } = checkForMdSyntax(target.innerHTML)
 
 	// getting the cursor position
 	const { startCharacterIndex, cursorStartNodePath } =  getCursorPosition()
@@ -35,7 +35,7 @@ function remapContent(event: Event) {
 
 	// setting the cursor position
 	nextTick(() => {
-		setCursor(startCharacterIndex, cursorStartNodePath, matches)
+		setCursor(startCharacterIndex, cursorStartNodePath, mdTagInserted)
 	})
 }
 
@@ -54,7 +54,7 @@ function checkForMdSyntax(content: string) {
 		})
 	}
 
-	return { newContent, matches: strongMatches ? true : false }
+	return { newContent, mdTagInserted: strongMatches ? true : false }
 }
 
 function parseContent(newContent: string): string {
@@ -88,11 +88,7 @@ function getCursorPosition() {
 	return { startCharacterIndex, endCharacterIndex, cursorStartNodePath }
 }
 
-function setCursor(
-		startCharacterIndex: number,
-		cursorStartNodePath: number[],
-		matches: boolean
-	) {
+function setCursor( startCharacterIndex: number, cursorStartNodePath: number[], mdTagInserted: boolean) {
 	const editor = editable.value
 
 	if (!editor) return
@@ -100,30 +96,30 @@ function setCursor(
 	const range = document.createRange()
 	const selection = window.getSelection()
 
-	let testingStartNode: Node | null | undefined = null
+	let startNode: Node | null | undefined = null
 
 	cursorStartNodePath.forEach((nodeIndex, index) => {
 		if (index === 0) {
-			testingStartNode = editor.childNodes[nodeIndex]
+			startNode = editor.childNodes[nodeIndex]
 			return
 		}
 
-		testingStartNode = testingStartNode?.childNodes[nodeIndex]
+		startNode = startNode?.childNodes[nodeIndex]
 	})
 
-	if (matches) {
-		if (testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1].nodeName === 'BR') {
-			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1]
+	if (mdTagInserted) {
+		if (startNode?.parentNode.childNodes[startNode?.parentNode.childNodes.length - 1].nodeName === 'BR') {
+			startNode = startNode?.parentNode.childNodes[startNode?.parentNode.childNodes.length - 1]
 		} else {
 			const br = document.createElement('br')
-			testingStartNode?.parentNode?.insertBefore(br, testingStartNode?.nextSibling)
-			testingStartNode = testingStartNode?.parentNode.childNodes[testingStartNode?.parentNode.childNodes.length - 1]
+			startNode?.parentNode?.insertBefore(br, startNode?.nextSibling)
+			startNode = startNode?.parentNode.childNodes[startNode?.parentNode.childNodes.length - 1]
 		}
 
 		startCharacterIndex = 0
 	}
 
-	range.setStart(testingStartNode, startCharacterIndex)
+	range.setStart(startNode, startCharacterIndex)
 
 	selection?.removeAllRanges()
 	selection?.addRange(range)
