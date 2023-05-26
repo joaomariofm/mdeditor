@@ -108,15 +108,10 @@ function setCursor( startCharacterIndex: number, cursorStartNodePath: number[], 
 	})
 
 	if (mdTagInserted) {
-		if (startNode?.parentNode.childNodes[startNode?.parentNode.childNodes.length - 1].nodeName === 'BR') {
-			startNode = startNode?.parentNode.childNodes[startNode?.parentNode.childNodes.length - 1]
-		} else {
-			const br = document.createElement('br')
-			startNode?.parentNode?.insertBefore(br, startNode?.nextSibling)
-			startNode = startNode?.parentNode.childNodes[startNode?.parentNode.childNodes.length - 1]
-		}
-
-		startCharacterIndex = 0
+		const startNodeParent = startNode?.parentNode as HTMLElement
+		startNodeParent.innerHTML = `${startNodeParent.innerHTML}&nbsp;`
+		startNode = startNodeParent.childNodes[startNodeParent.childNodes.length - 1]
+		startCharacterIndex = 1
 	}
 
 	range.setStart(startNode, startCharacterIndex)
