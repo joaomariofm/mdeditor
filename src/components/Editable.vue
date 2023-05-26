@@ -107,6 +107,7 @@ function setCursor( startCharacterIndex: number, cursorStartNodePath: number[], 
 		startNode = startNode?.childNodes[nodeIndex]
 	})
 
+	// TODO: this logic should be in the checkForMdSyntax function
 	if (mdTagInserted) {
 		const startNodeParent = startNode?.parentNode as HTMLElement
 		startNodeParent.innerHTML = `${startNodeParent.innerHTML}&nbsp;`
